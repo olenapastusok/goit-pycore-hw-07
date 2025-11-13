@@ -79,8 +79,8 @@ class Record:
 
     def __str__(self):
         phone_str = '; '.join(p.value for p in self.phones) 
-        bithday_str = f", birthday: {self.birthday}" if self.birthday else "Bithday was not added"
-        return f"Contact name: {self.name.value}, phones: {phone_str}{bithday_str}"
+        birthday_str = f", birthday: {self.birthday}" if self.birthday else ", birthday was not added"
+        return f"Contact name: {self.name.value}, phones: {phone_str}{birthday_str}"
 
 class AddressBook(UserDict):
     """" Клас, який відповідає за додавання нових записів, пошук записів за іменем та видалення записів за іменем"""
@@ -121,17 +121,20 @@ class AddressBook(UserDict):
 
 
 def input_error(func):
-    """Функція обробок помилок"""
+    """Функція обробки помилок з інформативними повідомленнями"""
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except ValueError as e:
-            return f"{e}"
-        except Exception as e:
-            return f"Unexceptional error, please check data one more time: {e}"
+            return f"Value error: {e}"
         except IndexError:
-            return "There are not enoght arguments. Please enter all arguments."
-
+            return "Not enough arguments. Please enter all required arguments."
+        except KeyError:
+            return "Contact not found. Please check the name and try again."
+        except AttributeError:
+            return "Contact not found or missing data. Please verify the input."
+        except Exception as e:
+            return f"Unexpected error: {e}"
     return inner
 
 def parse_input(user_input: str):
@@ -160,17 +163,13 @@ def add_contact(args, book: AddressBook):
 def change_contact(args, book: AddressBook):
     name, old_phone_number, new_phone_number = args
     record = book.find(name)
-    if record is None:
-        raise KeyError
     record.edit_phone(old_phone_number, new_phone_number)
-    return "Pnone number was updated"
+    return "Phone number was updated"
 
 @input_error
 def show_phone(args, book: AddressBook):
     name = args[0]
     record = book.find(name)
-    if record is None:
-        raise KeyError
     return '; '.join(p.value for p in record.phones)
 
 @input_error
@@ -186,19 +185,14 @@ def show_all(book: AddressBook):
 def add_birthday(args, book: AddressBook):
     name, birthday = args
     record = book.find(name)
-    if record is None:
-        raise KeyError
-
     record.add_birthday(birthday)
-    return "Bithday updated."
+    return "Birthday updated."
 
 @input_error
 def show_birthday(args, book: AddressBook):
     name = args[0]
     record = book.find(name)
-    if record is None:
-        raise KeyError
-    return record.birthday if record.birthday else "Bithday was not added"
+    return record.birthday if record.birthday else "Birthday was not added"
 
 @input_error
 def birthdays(book: AddressBook):
@@ -245,6 +239,17 @@ def main():
 
         elif command == "birthdays":
             print(birthdays(book))
+
+        elif command == "help":
+            print("""Available commands:
+            add [name] [phone]
+            change [name] [old_phone] [new_phone]
+            phone [name]
+            all
+            add-birthday [name] [DD.MM.YYYY]
+            show-birthday [name]
+            birthdays
+            exit / close""")
 
         else:
             print("Invalid command.")
